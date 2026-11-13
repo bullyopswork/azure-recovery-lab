@@ -4,7 +4,13 @@
 
 A small web service built to make failure and recovery observable: fail a health check, watch an external supervisor replace the process, and verify the new instance over HTTP.
 
-**Current evidence:** local recovery is measured, Linux production container CI passes, and the published image is anonymously pullable. A real Terraform deployment and GitHub OIDC exchange have succeeded. Azure recovery remains **unverified**: two deployed tests stopped before fault injection. Temporary resource cleanup is in progress; this is not permanent hosting.
+**Current evidence:** a real Azure recovery experiment passed. After one controlled health failure, the same replica restarted its container and served a different healthy boot. The recorded exec start to completed healthy response measurement was **43.158 seconds**, including CLI setup, ingress and polling. Platform events explicitly identify liveness probe failure and `ProbeFailure` termination. All temporary app, environment, bootstrap storage, identity and scoped permissions were independently verified removed. Final billed usage is not yet available.
+
+[Watch the 28 second recorded data replay](demo/Recovery-Results.mp4) · [Evidence and cause review](evidence/azure-recovery-review.json) · [Successful live workflow](https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43466690841)
+
+![Recorded recovery results](demo/Recovery-Filmstrip.png)
+
+The video is a replay of saved HTTP observations, not a live screen recording. The editable [Tesseract composition](demo/Recovery-Results.tsrct) is included. This is a temporary, single replica experiment, not permanent hosting or a zero downtime claim.
 
 ## What this demonstrates
 
@@ -90,11 +96,13 @@ Liveness and readiness intentionally use the same simple failure model; a produc
 
 ## Verification status
 
-- Eighteen local health, fault isolation, target guard and bounded read tests: passed locally. The linked CI badge tracks the current branch; the original ten tests and actual production container passed Linux CI.
-- Three local restart experiments and owned-process cleanup: passed.
-- Both Terraform roots: schema valid with the pinned provider. Real bootstrap and app plan/apply succeeded in Azure.
-- Linux production container: build and real Gunicorn HTTP smoke checks passed in the linked CI run, including non-root UID and rejected public fault mutation. No local Docker daemon was available during initial development.
-- Published image: anonymous manifest/config access, descriptor digests and actual linux/amd64 configuration verified.
-- Azure account, actual Terraform deployment and OIDC exchange: verified. Live recovery, platform cause, final billing and final cloud cleanup: pending.
+1. **22 health, fault isolation and cloud guard tests passed**, with Terraform schema validation and the actual Linux Gunicorn container smoke test in [exact source CI](https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43465708681).
+2. Three local restart experiments and owned process cleanup passed. Their timing definition differs from the cloud test.
+3. Anonymous manifest/configuration bytes and actual linux/amd64 configuration were verified for the unchanged immutable image.
+4. [The live Azure workflow](https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43466690841) passed deployment, boot bound fault injection, measured recovery, app/environment cleanup and independent empty group verification.
+5. A separate raw artifact review verified the same revision, replica and image, the targeted boot acknowledgement, post acknowledgement HTTP 503, a different healthy boot, and explicit liveness failure/restart platform events. This was a container/process restart within the same replica, not replica replacement or redeployment.
+6. Parent checks verified final bootstrap teardown, empty managed state, both groups and all scoped deployment permissions absent, and removal of the six obsolete GitHub environment variables.
+7. Final billed usage remains unknown because Azure Cost Management has not yet ingested the subscription. No zero cost claim is made.
 
+Earlier failures remain listed in [the machine readable receipt](evidence/verification.json); they were not relabeled as successes.
 See [sources and pinned versions](docs/SOURCES.md) for the vendor references used to build this lab.

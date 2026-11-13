@@ -1,8 +1,8 @@
 {
-  "verified_source_commit": "7bdeffba5fe866bc45a62df323a16b2b49ae5fcf",
-  "ci_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43355264270",
+  "verified_source_commit": "e5c8d757c46db64541d97268055185de6b1f6ebd",
+  "ci_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43465708681",
   "ci_conclusion": "success",
-  "unit_and_guard_tests_passed": 10,
+  "unit_and_guard_tests_passed": 22,
   "terraform_roots_schema_validated": 2,
   "linux_production_container_smoke_passed": true,
   "production_http_server": "Gunicorn",
@@ -24,25 +24,52 @@
     1.113
   ],
   "azure_deployment_verified": true,
-  "azure_recovery_observed": false,
-  "platform_liveness_cause_verified": false,
-  "azure_cleanup_verified": false,
-  "note": "Original source/image CI fields retain their original identity. Azure deployment and OIDC are verified separately from recovery. Failed results are preserved, not relabeled as success. Final cloud teardown and posted billing remain pending.",
-  "latest_local_guard_tests_passed": 18,
+  "azure_recovery_observed": true,
+  "platform_liveness_cause_verified": true,
+  "azure_cleanup_verified": true,
+  "note": "Image identity and original publication are separate from current harness source and CI. Actual Azure recovery, explicit probe-triggered container restart and final teardown are verified. This one trial is not an SLA or a reliability benchmark. Final billed usage is not yet available.",
+  "latest_local_guard_tests_passed": 22,
   "azure_oidc_exchange_verified": true,
   "azure_remote_state_authentication_verified": true,
   "azure_attempts": [
     {
+      "workflow_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43430356380",
+      "deployment": "failed before allocation at OIDC subject mismatch",
+      "recovery": "not started",
+      "cleanup": "no app allocation"
+    },
+    {
       "workflow_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43431029771",
       "deployment": "success",
-      "recovery": "failed before injection at initial healthy baseline",
-      "cleanup": "physical app and environment absence independently confirmed; remote state reconciled"
+      "recovery": "failed before injection at healthy baseline",
+      "cleanup": "physical absence and state reconciliation verified"
     },
     {
       "workflow_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43436102634",
       "deployment": "success",
-      "recovery": "failed before injection at first CLI app inspection; original stderr discarded, cause unknown",
-      "cleanup": "in progress"
+      "recovery": "failed before injection at first CLI app inspection; original diagnostic unavailable",
+      "cleanup": "physical absence and state reconciliation verified"
+    },
+    {
+      "workflow_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43441900658",
+      "deployment": "failed at workflow deployment deadline while environment creation pending",
+      "recovery": "skipped",
+      "cleanup": "stale lock reconciled, orphan environment removed and bootstrap teardown independently verified"
+    },
+    {
+      "workflow_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43466690841",
+      "deployment": "success",
+      "recovery": "measured PASS; liveness restart cause verified separately",
+      "cleanup": "automatic app/environment cleanup passed; parent verified final bootstrap teardown"
     }
-  ]
+  ],
+  "image_source_commit": "7bdeffba5fe866bc45a62df323a16b2b49ae5fcf",
+  "azure_workflow_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43466690841",
+  "azure_workflow_conclusion": "success",
+  "final_billed_cost_known": false,
+  "azure_recovery_run_id": "56ee628dcc774783b2c03df6a5261d56",
+  "recovery_from_exec_start_seconds": 43.158,
+  "review_receipt": "evidence/azure-recovery-review.json",
+  "raw_result": "evidence/azure-recovery.json",
+  "demo": "demo/Recovery-Results.mp4"
 }

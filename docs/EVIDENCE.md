@@ -20,11 +20,19 @@ There is no manual restart call in this path. Still, replacement alone does not 
 
 If logs do not establish cause, say so. Report `azure_recovery_observed` separately from cause verification. Include replica changes, HTTP sampling interval, source commit, image digest, timings, exact experiment definition and cleanup receipt. Recovery-from-exec-start is not comparable to the local injection-to-ready timing without accounting for setup and polling differences.
 
-## Current Azure attempts
+## Accepted Azure result, November 13, 2026
 
-The live deployment and GitHub OIDC exchange have succeeded. Recovery is still unverified. The first deployed run stopped at its initial HTTP health check before ingress was ready. A later run stopped in its first Azure CLI app inspection. The original helper discarded CLI stderr, so that second failure's underlying cause is unknown. Neither failed test injected a fault.
+[Workflow 43466690841](https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43466690841), exact harness source `e5c8d757c46db64541d97268055185de6b1f6ebd`, passed every step. Raw run `56ee628dcc774783b2c03df6a5261d56` records **43.158 seconds** from monotonic exec launch to completion of the first healthy response from the new boot. The response sample timestamps mark request start, so subtracting them does not reproduce that completed observation metric. CLI setup, network, ingress and polling are included. This is one controlled trial, not pure platform restart latency or an SLA.
 
-The inspection helper now reports fixed, allowlisted diagnostic labels rather than arbitrary stderr, which can contain private values. It retries recognized temporary read failures at most three times, with a 15 second command timeout and short backoff. Authentication, authorization and unknown failures stop immediately. The helper accepts only app inspection and replica listing; fault injection is never retried through it. A successful read and all configuration and healthy baseline checks are still required before injection.
+The healthy baseline boot was `18adbf37-fab5-4a09-86df-f2eb1f2b6823`; the CLI acknowledgement names that exact boot. A post acknowledgement HTTP 503 was recorded, followed by healthy boot `405a0982-6ba3-4cff-b85c-3b27e97a5068`. Revision, replica and image stayed the same. The platform restarted the container within the existing replica. A separate HTTP observer corroborated the same two boot IDs and measured 38.771 seconds between its first failed request and first healthy request from the new boot; that is a different metric.
+
+The matching platform events show liveness HTTP 503 at 16:55:55 and 16:55:58 UTC, an explicit will be restarted event, `ProbeFailure` termination at 16:55:58, and the container starting at 16:56:09. The later startup probe error is after restart and is not its trigger. App level traffic/update messages at 16:56:01 explicitly state that no revision restart or provisioning was needed; those events are retained, not omitted.
+
+The [raw result](../evidence/azure-recovery.json) is unchanged, including its deliberately false pre-review cause flag and `PASS_RECOVERY_CAUSE_REQUIRES_REVIEW` label. The [separate reviewed receipt](../evidence/azure-recovery-review.json) records cause verification and final teardown. Published system events retain selected event fields and unchanged messages; the complete original artifact is retained by the linked workflow. SHA256 provenance is in the reviewed receipt.
+
+Automatic app/environment cleanup passed after about 25 minutes. Independent checks then confirmed exact environment absence, an empty app group, empty remote managed state and an available backend lease. Only then was the reviewed nine delete bootstrap plan applied. Both groups, identity, state storage, federation and scoped roles were independently verified absent. Final billing remains unverified until Azure posts usable usage data.
+
+Earlier attempts stopped before injection because of OIDC trust mismatch, ingress startup timing, an undiagnosed CLI inspection error, and a hard deployment timeout with a stale state lock. Their failed evidence is preserved and their outcomes remain distinct in [verification.json](../evidence/verification.json).
 
 ## Demo outline
 

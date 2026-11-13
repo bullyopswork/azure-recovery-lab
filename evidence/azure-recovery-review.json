@@ -1,0 +1,45 @@
+{
+  "run_id": "56ee628dcc774783b2c03df6a5261d56",
+  "workflow_run": 43466690841,
+  "tested_source_commit": "e5c8d757c46db64541d97268055185de6b1f6ebd",
+  "raw_result_sha256": "3b5c836dc0b9dad5fb5e500e667486f65dc00a9f80b4302ef915bed9c8345985",
+  "original_system_log_sha256": "c3bd017c80edde1c58d89f3b1187f0da9f16688050c4ff64a8a63e41013821b2",
+  "measured_recovery_accepted": true,
+  "platform_liveness_cause_verified": true,
+  "healthy_baseline_verified": true,
+  "post_ack_HTTP503_verified": true,
+  "same_revision_and_image_verified": true,
+  "recovery_from_exec_start_seconds": 43.158,
+  "metric_definition": "From Azure CLI exec start to first healthy new boot after observed HTTP failure; includes exec setup and ingress/poll delays. Not an SLA or pure restart latency.",
+  "cause_review": "Same run-window revision/replica: Liveness503, explicit will-be-restarted, ProbeFailure termination, ContainerStarted then healthy newboot. App-level update events explicitly report no revision restart or provisioning needed.",
+  "raw_cause_false_preserved_as_pre_review_state": true,
+  "cleanup_verified": true,
+  "reviewed_at": "2026-11-13T17:24:00.680121+00:00",
+  "container_restart_within_same_replica": true,
+  "system_log_published_fields": [
+    "TimeStamp",
+    "Type",
+    "Msg",
+    "Reason",
+    "RevisionName",
+    "ReplicaName",
+    "ContainerAppName",
+    "EventSource",
+    "Count"
+  ],
+  "published_system_projection_sha256": "c4a06e74fd65fe62f3e9a53370e5948c6b0e23e186fa3b07721541fd31f05793",
+  "raw_system_artifact_retained_in_workflow": true,
+  "technical_cleanup": {
+    "app_and_environment_absent": true,
+    "both_bootstrap_groups_absent": true,
+    "deployment_identity_and_federation_absent": true,
+    "three_scoped_role_assignments_absent": true,
+    "managed_state_empty": true,
+    "matching_obsolete_environment_variables_removed": 6
+  },
+  "billing": {
+    "final_amount_known": false,
+    "reason": "Azure Cost Management has not yet ingested the subscription; no zero-cost claim"
+  },
+  "independent_http_failure_to_new_healthy_request_seconds": 38.771
+}
