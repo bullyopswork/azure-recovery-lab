@@ -108,14 +108,44 @@ def extract_ack(text):
     return None
 
 
+def wait_for_healthy_baseline(url, result, timeout=90, interval=1):
+    """Wait for public ingress readiness without injecting or counting recovery."""
+    began = time.monotonic()
+    deadline = began + timeout
+    result["baseline_samples"] = []
+    result["baseline_definition"] = "Three consecutive healthy HTTP200 samples from the same valid boot before injection. Startup failures are not recovery evidence."
+    last_boot, consecutive = None, 0
+    try:
+        while time.monotonic() < deadline:
+            sample = http_sample(url)
+            result["baseline_samples"].append(sample)
+            boot = sample.get("boot_id")
+            valid = sample.get("http_status") == 200 and sample.get("healthy") is True
+            try:
+                uuid.UUID(boot)
+            except (ValueError, TypeError, AttributeError):
+                valid = False
+            if valid:
+                consecutive = consecutive + 1 if boot == last_boot else 1
+                last_boot = boot
+                if consecutive >= 3:
+                    return sample
+            else:
+                last_boot, consecutive = None, 0
+            remaining = deadline - time.monotonic()
+            if remaining > 0:
+                time.sleep(min(interval, remaining))
+    finally:
+        result["baseline_wait_seconds"] = round(time.monotonic() - began, 3)
+    raise RuntimeError("No stable healthy baseline before injection within %ss" % timeout)
+
+
 def experiment(args, result):
     target = inspect_app(args)
     result["target"] = target
-    before = http_sample(args.url)
-    if before["http_status"] != 200 or before["healthy"] is not True:
-        raise RuntimeError("Target is not healthy before injection")
-    uuid.UUID(before["boot_id"])
+    before = wait_for_healthy_baseline(args.url, result)
     result["before"] = before
+    atomic_json(args.output, result)
     # A pseudo-terminal is required by Azure CLI's SSH-like exec transport. The
     # command is constant: no shell, interpolated user commands, or remote restart.
     master, slave = pty.openpty()

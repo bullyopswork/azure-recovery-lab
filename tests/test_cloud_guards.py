@@ -1,13 +1,62 @@
 """Safety contracts that can be tested without a cloud account or network."""
 import unittest
 from unittest.mock import patch, MagicMock
-from scripts.azure_recovery_drill import extract_ack, validate_target
+from scripts.azure_recovery_drill import extract_ack, validate_target, wait_for_healthy_baseline
 from scripts.verify_public_image import parse_image, verify
 
 SUBSCRIPTION = "11111111-1111-4111-8111-111111111111"
 
 
+class Clock:
+    def __init__(self):
+        self.now = 0
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.now += seconds
+
+
 class CloudGuards(unittest.TestCase):
+    def test_startup_and_boot_changes_require_a_new_stable_baseline(self):
+        a, b = SUBSCRIPTION, "22222222-2222-4222-8222-222222222222"
+        def healthy(boot):
+            return {"http_status": 200, "healthy": True, "boot_id": boot}
+        bad = {"http_status": 503, "healthy": False, "boot_id": None}
+        samples = [bad, healthy(a), healthy(a), bad, healthy(a), healthy(b), healthy(b), healthy(b)]
+        clock, result = Clock(), {}
+        with patch("scripts.azure_recovery_drill.http_sample", side_effect=samples), \
+                patch("scripts.azure_recovery_drill.time.monotonic", clock.monotonic), \
+                patch("scripts.azure_recovery_drill.time.sleep", clock.sleep):
+            before = wait_for_healthy_baseline("https://test.invalid", result)
+        self.assertEqual(before["boot_id"], b)
+        self.assertEqual(result["baseline_samples"], samples)
+        self.assertNotIn("injection_started_at", result)
+        self.assertNotIn("samples", result)
+
+    def test_baseline_timeout_preserves_startup_failure_evidence(self):
+        clock, result = Clock(), {}
+        bad = {"http_status": 503, "healthy": False, "boot_id": None}
+        with patch("scripts.azure_recovery_drill.http_sample", return_value=bad), \
+                patch("scripts.azure_recovery_drill.time.monotonic", clock.monotonic), \
+                patch("scripts.azure_recovery_drill.time.sleep", clock.sleep), self.assertRaises(RuntimeError):
+            wait_for_healthy_baseline("https://test.invalid", result, timeout=3)
+        self.assertEqual(len(result["baseline_samples"]), 3)
+        self.assertEqual(result["baseline_wait_seconds"], 3)
+        self.assertNotIn("before", result)
+        self.assertNotIn("fault_acknowledgement", result)
+
+    def test_healthy_status_without_a_valid_boot_cannot_enable_injection(self):
+        clock, result = Clock(), {}
+        invalid = {"http_status": 200, "healthy": True, "boot_id": "invalid"}
+        with patch("scripts.azure_recovery_drill.http_sample", return_value=invalid), \
+                patch("scripts.azure_recovery_drill.time.monotonic", clock.monotonic), \
+                patch("scripts.azure_recovery_drill.time.sleep", clock.sleep), self.assertRaises(RuntimeError):
+            wait_for_healthy_baseline("https://test.invalid", result, timeout=3)
+        self.assertEqual(len(result["baseline_samples"]), 3)
+        self.assertNotIn("fault_acknowledgement", result)
+
     def test_actual_configuration_must_be_amd64_even_if_index_claims_it(self):
         image = "ghcr.io/bullyopswork/azure-recovery-lab@sha256:" + "a" * 64
         manifest = {"config": {"digest": "sha256:" + "b" * 64}}

@@ -11,7 +11,7 @@ The current three trials took 1.151, 1.142 and 1.153 seconds at a 100 ms samplin
 The cloud script writes `RUNNING` before doing the experiment and atomically changes it to `FAIL` or `PASS_RECOVERY_CAUSE_REQUIRES_REVIEW`. It cannot silently reuse a previous run's PASS. A successful measurement requires:
 
 1. The exact tagged app, ingress, image/revision and one-replica configuration.
-2. Healthy HTTP from boot A.
+2. Three consecutive healthy HTTP samples from the same boot A, after a bounded startup wait. Startup failures remain separate baseline evidence and cannot count toward recovery.
 3. CLI fault acknowledgement explicitly naming boot A.
 4. An observed non-200/unreachable interval.
 5. Healthy HTTP from boot B, with A != B and unchanged revision/image.
