@@ -1,0 +1,96 @@
+name: Temporary Azure recovery demo
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Public ghcr.io image pinned to sha256 digest
+        required: true
+      enable_faults:
+        description: Enable CLI-only fault injection for this temporary demo
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: recoverylab-azure-demo
+  cancel-in-progress: false
+jobs:
+  demo:
+    if: github.repository_owner == 'bullyopswork' && github.ref == 'refs/heads/main'
+    environment: azure-demo
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      ARM_USE_OIDC: 'true'
+      ARM_USE_AZUREAD: 'true'
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      TF_VAR_resource_group_name: ${{ vars.APP_RESOURCE_GROUP }}
+      TF_VAR_container_image: ${{ inputs.image }}
+      TF_VAR_enable_faults: ${{ inputs.enable_faults }}
+      TF_VAR_expires_at: temporary-demo-cleanup-required
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: '1.17.2'
+          terraform_wrapper: false
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify public image access before allocating cloud compute
+        run: python scripts/verify_public_image.py "$TF_VAR_container_image"
+      - name: Verify Azure CLI command availability
+        run: |
+          az version
+          az containerapp exec --help >/dev/null
+      - name: Initialize Entra-authenticated remote state
+        working-directory: infra/app
+        env:
+          STATE_GROUP: ${{ vars.STATE_RESOURCE_GROUP }}
+          STATE_ACCOUNT: ${{ vars.STATE_STORAGE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "$STATE_GROUP" && test -n "$STATE_ACCOUNT"
+          terraform init -input=false -lockfile=readonly -backend-config="resource_group_name=$STATE_GROUP" -backend-config="storage_account_name=$STATE_ACCOUNT" -backend-config=container_name=tfstate -backend-config=key=recoverylab.tfstate
+      - name: Plan and deploy only the isolated lab
+        id: deploy
+        timeout-minutes: 12
+        working-directory: infra/app
+        run: |
+          set -euo pipefail
+          terraform plan -input=false -out=demo.tfplan
+          terraform apply -input=false demo.tfplan
+      - name: Real Azure recovery experiment
+        if: inputs.enable_faults
+        timeout-minutes: 8
+        env:
+          APP_RESOURCE_GROUP: ${{ vars.APP_RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          python scripts/azure_recovery_drill.py --resource-group "$APP_RESOURCE_GROUP" --app-name recoverylab-app --url "$(terraform -chdir=infra/app output -raw url)"
+      - name: Always remove temporary app and environment
+        if: always() && steps.deploy.outcome != 'skipped'
+        timeout-minutes: 10
+        working-directory: infra/app
+        run: |
+          set -euo pipefail
+          if test -d .terraform; then
+            terraform destroy -auto-approve -input=false
+            terraform state list > /tmp/recoverylab-state-list
+            if grep -q '^azurerm_container_app' /tmp/recoverylab-state-list; then
+              echo 'App or environment remains in Terraform state' >&2
+              exit 1
+            fi
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: azure-recovery-evidence
+          path: evidence/azure-recovery*

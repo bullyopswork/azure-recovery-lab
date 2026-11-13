@@ -1,0 +1,8 @@
+.git
+.tools
+evidence
+tests
+**/__pycache__
+**/*.tfstate*
+**/*.tfvars
+.env*

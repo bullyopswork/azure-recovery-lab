@@ -1,0 +1,4 @@
+resource_group_name = "rg-recoverylab-app-yourlabid"
+container_image     = "ghcr.io/bullyopswork/azure-recovery-lab@sha256:REPLACE_WITH_VERIFIED_PUBLIC_IMAGE_DIGEST"
+enable_faults       = true
+expires_at          = "REPLACE_WITH_DEMO_END_TIME_UTC"

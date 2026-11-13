@@ -1,0 +1,89 @@
+{"at": 1794537571.360184, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "child_started", "pid": 50254, "restart_number": 0}
+{"at": 1794537571.404027, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "boot", "boot_id": "8b080ab8-af66-41f0-b7b1-d67726f7d6bf"}
+{"at": 1794537571.433332, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 200, "duration_ms": 0.07}
+{"at": 1794537571.670272, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.06}
+{"at": 1794537571.973737, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.06}
+{"at": 1794537572.2748559, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.06}
+{"at": 1794537572.5778089, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.05}
+{"at": 1794537572.880161, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.06}
+{"at": 1794537573.182158, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.11}
+{"at": 1794537573.483677, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.06}
+{"at": 1794537573.639294, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 200, "duration_ms": 0.05}
+{"at": 1794537573.640335, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.1}
+{"at": 1794537573.742462, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.11}
+{"at": 1794537573.789509, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537573.789716, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 1, "pid": 50254}
+{"at": 1794537573.846424, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537573.9522371, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537574.056577, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.13}
+{"at": 1794537574.0953212, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.1}
+{"at": 1794537574.095485, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 2, "pid": 50254}
+{"at": 1794537574.160213, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537574.265197, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537574.3710039, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.11}
+{"at": 1794537574.4001951, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.1}
+{"at": 1794537574.4003751, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 3, "pid": 50254}
+{"at": 1794537574.400414, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "restart_requested", "pid": 50254, "reason": "liveness_probe"}
+{"at": 1794537574.7050009, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "child_started", "pid": 50262, "restart_number": 1}
+{"at": 1794537574.745389, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "boot", "boot_id": "f67b2823-1236-4bf1-afeb-002df52515f0"}
+{"at": 1794537574.789877, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 200, "duration_ms": 0.12}
+{"at": 1794537575.011122, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537575.3155289, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.25}
+{"at": 1794537575.617654, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.16}
+{"at": 1794537575.921806, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537576.2274969, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537576.533786, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.21}
+{"at": 1794537576.836357, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.23}
+{"at": 1794537576.996042, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537576.997024, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.06}
+{"at": 1794537577.103012, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.16}
+{"at": 1794537577.138619, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.09}
+{"at": 1794537577.138824, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 1, "pid": 50262}
+{"at": 1794537577.205446, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.19}
+{"at": 1794537577.3114, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537577.413471, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537577.440625, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537577.44082, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 2, "pid": 50262}
+{"at": 1794537577.5193348, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.11}
+{"at": 1794537577.622174, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537577.723715, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.14}
+{"at": 1794537577.7423859, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537577.742563, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 3, "pid": 50262}
+{"at": 1794537577.742589, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "restart_requested", "pid": 50262, "reason": "liveness_probe"}
+{"at": 1794537578.050348, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "child_started", "pid": 50264, "restart_number": 2}
+{"at": 1794537578.095934, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "boot", "boot_id": "6b26b76d-a03f-49ae-a50e-7eb9ed1d3f38"}
+{"at": 1794537578.138058, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537578.355582, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.2}
+{"at": 1794537578.661578, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.13}
+{"at": 1794537578.963419, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.13}
+{"at": 1794537579.2693372, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.15}
+{"at": 1794537579.5751848, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537579.880175, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537580.1857889, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.25}
+{"at": 1794537580.3440619, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 200, "duration_ms": 0.13}
+{"at": 1794537580.345026, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.08}
+{"at": 1794537580.45019, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.13}
+{"at": 1794537580.490957, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.22}
+{"at": 1794537580.491342, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 1, "pid": 50264}
+{"at": 1794537580.5560331, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537580.659711, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537580.7634351, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.12}
+{"at": 1794537580.794435, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.13}
+{"at": 1794537580.794605, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 2, "pid": 50264}
+{"at": 1794537580.8692942, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.13}
+{"at": 1794537580.973881, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.14}
+{"at": 1794537581.0790899, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 503, "duration_ms": 0.13}
+{"at": 1794537581.097722, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 503, "duration_ms": 0.11}
+{"at": 1794537581.0979142, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "probe_failed", "status": 503, "consecutive": 3, "pid": 50264}
+{"at": 1794537581.097943, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "restart_requested", "pid": 50264, "reason": "liveness_probe"}
+{"at": 1794537581.4053812, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "child_started", "pid": 50265, "restart_number": 3}
+{"at": 1794537581.446149, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "boot", "boot_id": "8f806a55-ed38-429a-89bc-2e3eebce838c"}
+{"at": 1794537581.496926, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/ready", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537581.708779, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.13}
+{"at": 1794537582.0150201, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.21}
+{"at": 1794537582.320995, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.11}
+{"at": 1794537582.626855, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.13}
+{"at": 1794537582.9327402, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537583.238344, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.14}
+{"at": 1794537583.544199, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "request", "path": "/health/live", "method": "GET", "status": 200, "duration_ms": 0.13}
+{"at": 1794537583.700406, "run_id": "b91a1823620447a3bbd75809e4900e0f", "event": "supervisor_stopped", "restarts": 3}

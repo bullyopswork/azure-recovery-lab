@@ -1,0 +1,51 @@
+name: Verify recovery lab
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: '1.17.2'
+          terraform_wrapper: false
+      - name: Health and fault contracts
+        run: python -m unittest discover -s tests -v
+      - name: Measured local recovery, not Azure evidence
+        run: python scripts/recovery_drill.py --output evidence/ci-local-recovery.json
+      - name: Terraform format and schema validation, no cloud access
+        run: |
+          terraform fmt -check -recursive infra
+          for root in infra/bootstrap infra/app; do
+            terraform -chdir="$root" init -backend=false -input=false -lockfile=readonly
+            terraform -chdir="$root" validate -no-color
+          done
+      - name: Build and smoke-test the real production container
+        run: |
+          set -euo pipefail
+          docker build -t recoverylab:ci .
+          trap 'docker rm -f recoverylab-smoke >/dev/null 2>&1 || true' EXIT
+          docker run -d --name recoverylab-smoke -p 127.0.0.1:18080:8080 recoverylab:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/health/ready; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/health/ready
+          test "$(docker exec recoverylab-smoke id -u)" = 10001
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:18080/fault)" = 405
+          curl -fsS http://127.0.0.1:18080/metrics
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: local-recovery-evidence
+          path: evidence/ci-local-recovery*
