@@ -1,0 +1,23 @@
+{
+  "verified_source_commit": "7bdeffba5fe866bc45a62df323a16b2b49ae5fcf",
+  "ci_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43355264270",
+  "ci_conclusion": "success",
+  "unit_and_guard_tests_passed": 10,
+  "terraform_roots_schema_validated": 2,
+  "linux_production_container_smoke_passed": true,
+  "production_http_server": "Gunicorn",
+  "production_container_uid": 10001,
+  "image_publication_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43355417048",
+  "image": "ghcr.io/bullyopswork/azure-recovery-lab@sha256:3a5b9cd85633e4511060fa29c3f0ae5f3878407ac1d340267ae8ba5bee1648bc",
+  "anonymous_image_manifest_and_configuration_access_verified": true,
+  "image_descriptor_digests_verified": true,
+  "actual_image_configuration_platform": "linux/amd64",
+  "local_recovery_scope": "LOCAL_PROCESS_SUPERVISOR_NOT_AZURE",
+  "local_recovery_trials_seconds": [1.151, 1.142, 1.153],
+  "ci_local_recovery_trials_seconds": [1.317, 1.215, 1.113],
+  "azure_deployment_verified": false,
+  "azure_recovery_observed": false,
+  "platform_liveness_cause_verified": false,
+  "azure_cleanup_verified": false,
+  "note": "Cloud fields are unverified because no live deployment has been run. Local recovery times and image publication are not Azure evidence."
+}
