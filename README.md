@@ -4,7 +4,7 @@
 
 A small web service built to make failure and recovery observable: fail a health check, watch an external supervisor replace the process, and verify the new instance over HTTP.
 
-**Current evidence:** local recovery is measured, Linux production-container CI passes, and the published image is anonymously pullable. Azure deployment and platform-triggered recovery are **not yet verified**. Nothing runs permanently in Azure.
+**Current evidence:** local recovery is measured, Linux production container CI passes, and the published image is anonymously pullable. A real Terraform deployment and GitHub OIDC exchange have succeeded. Azure recovery remains **unverified**: two deployed tests stopped before fault injection. Temporary resource cleanup is in progress; this is not permanent hosting.
 
 ## What this demonstrates
 
@@ -72,7 +72,7 @@ Only GET and HEAD are accepted. There is **no public fault endpoint**. In a cont
 The production image runs Gunicorn as non-root UID 10001. Python dependencies have SHA256 hashes. CI builds and smoke-tests the actual image on Linux; the local process drill uses the standard-library server.
 
 - [Passing CI run](https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43355264270) and [image publication](https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43355417048), for source `7bdeffba5fe866bc45a62df323a16b2b49ae5fcf`.
-- [Machine-readable verification receipt](evidence/verification.json), including the immutable image reference and explicit unverified cloud fields.
+- [Machine-readable verification receipt](evidence/verification.json), including the immutable image reference and separate cloud deployment, recovery and cleanup fields.
 - [Deployment and OIDC setup](docs/AZURE.md)
 - [Budget assumptions and cleanup](docs/COST_AND_CLEANUP.md)
 - [Evidence definitions and review checklist](docs/EVIDENCE.md)
@@ -90,11 +90,11 @@ Liveness and readiness intentionally use the same simple failure model; a produc
 
 ## Verification status
 
-- Ten local health, fault-isolation and cloud-target guard tests: passed locally and in Linux CI.
+- Eighteen local health, fault isolation, target guard and bounded read tests: passed locally. The linked CI badge tracks the current branch; the original ten tests and actual production container passed Linux CI.
 - Three local restart experiments and owned-process cleanup: passed.
-- Both Terraform roots: schema-valid with the pinned provider; **no live plan/apply yet**.
+- Both Terraform roots: schema valid with the pinned provider. Real bootstrap and app plan/apply succeeded in Azure.
 - Linux production container: build and real Gunicorn HTTP smoke checks passed in the linked CI run, including non-root UID and rejected public fault mutation. No local Docker daemon was available during initial development.
 - Published image: anonymous manifest/config access, descriptor digests and actual linux/amd64 configuration verified.
-- Azure account, OIDC exchange, live recovery, platform cause, final billing and cloud cleanup: pending live verification.
+- Azure account, actual Terraform deployment and OIDC exchange: verified. Live recovery, platform cause, final billing and final cloud cleanup: pending.
 
 See [sources and pinned versions](docs/SOURCES.md) for the vendor references used to build this lab.

@@ -13,11 +13,36 @@
   "image_descriptor_digests_verified": true,
   "actual_image_configuration_platform": "linux/amd64",
   "local_recovery_scope": "LOCAL_PROCESS_SUPERVISOR_NOT_AZURE",
-  "local_recovery_trials_seconds": [1.151, 1.142, 1.153],
-  "ci_local_recovery_trials_seconds": [1.317, 1.215, 1.113],
-  "azure_deployment_verified": false,
+  "local_recovery_trials_seconds": [
+    1.151,
+    1.142,
+    1.153
+  ],
+  "ci_local_recovery_trials_seconds": [
+    1.317,
+    1.215,
+    1.113
+  ],
+  "azure_deployment_verified": true,
   "azure_recovery_observed": false,
   "platform_liveness_cause_verified": false,
   "azure_cleanup_verified": false,
-  "note": "Cloud fields are unverified because no live deployment has been run. Local recovery times and image publication are not Azure evidence."
+  "note": "Original source/image CI fields retain their original identity. Azure deployment and OIDC are verified separately from recovery. Failed results are preserved, not relabeled as success. Final cloud teardown and posted billing remain pending.",
+  "latest_local_guard_tests_passed": 18,
+  "azure_oidc_exchange_verified": true,
+  "azure_remote_state_authentication_verified": true,
+  "azure_attempts": [
+    {
+      "workflow_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43431029771",
+      "deployment": "success",
+      "recovery": "failed before injection at initial healthy baseline",
+      "cleanup": "physical app and environment absence independently confirmed; remote state reconciled"
+    },
+    {
+      "workflow_run": "https://github.com/bullyopswork/azure-recovery-lab/actions/runs/43436102634",
+      "deployment": "success",
+      "recovery": "failed before injection at first CLI app inspection; original stderr discarded, cause unknown",
+      "cleanup": "in progress"
+    }
+  ]
 }

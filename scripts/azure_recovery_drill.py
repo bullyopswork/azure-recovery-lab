@@ -54,12 +54,47 @@ def http_sample(url):
         return {"at": at, "http_status": 0, "boot_id": None, "healthy": False}
 
 
+def cli_error_summary(stderr):
+    """Emit fixed diagnostic labels, never arbitrary CLI stderr or secret values."""
+    labels = ("ResourceNotFound", "ContainerAppNotFound", "RevisionNotFound",
+              "TooManyRequests", "InternalServerError", "ServiceUnavailable",
+              "ConnectionError", "Connection reset", "Read timed out", "ConnectTimeout",
+              "AuthorizationFailed", "AuthenticationFailed", "Forbidden",
+              "InvalidAuthenticationToken", "ModuleNotFoundError",
+              "unrecognized arguments", "requires the extension", "az login")
+    found = [label for label in labels if label in str(stderr)]
+    if "AADSTS" in str(stderr):
+        found.append("AADSTS authentication error")
+    return "; ".join(found) or "Unclassified CLI failure; raw stderr intentionally omitted"
+
+
 def az_json(subscription, *arguments):
-    result = subprocess.run(["az", *arguments, "--subscription", subscription, "--only-show-errors", "-o", "json"],
-                            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=45, check=False)
-    if result.returncode:
-        raise RuntimeError("Azure CLI read failed (%s); inspect authenticated CLI locally" % " ".join(arguments[:3]))
-    return json.loads(result.stdout)
+    # Only these constant, read-only inspections are eligible for propagation
+    # retries. Never retry an exec/fault operation through this helper.
+    if not (arguments[:2] == ("containerapp", "show") or
+            arguments[:3] == ("containerapp", "replica", "list")):
+        raise ValueError("Unexpected Azure read operation")
+    transient = ("ResourceNotFound", "ContainerAppNotFound", "RevisionNotFound",
+                 "TooManyRequests", "InternalServerError", "ServiceUnavailable",
+                 "ConnectionError", "Connection reset", "Read timed out", "ConnectTimeout")
+    for attempt in range(3):
+        try:
+            result = subprocess.run(["az", *arguments, "--subscription", subscription, "--only-show-errors", "-o", "json"],
+                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15, check=False)
+        except subprocess.TimeoutExpired:
+            if attempt == 2:
+                raise RuntimeError("Azure CLI read timed out after three bounded attempts") from None
+        else:
+            if result.returncode == 0:
+                return json.loads(result.stdout)
+            # Authentication/authorization and unknown errors fail immediately.
+            # A temporary read error never counts as healthy app evidence.
+            detail = cli_error_summary(result.stderr)
+            auth_error = any(x in result.stderr for x in ("AuthorizationFailed", "AuthenticationFailed", "AADSTS", "Forbidden", "InvalidAuthenticationToken"))
+            if auth_error or attempt == 2 or not any(x in result.stderr for x in transient):
+                raise RuntimeError("Azure CLI read failed (%s), exit %s: %s" %
+                                   (" ".join(arguments[:3]), result.returncode, detail))
+        time.sleep(attempt + 1)
 
 
 def inspect_app(args):

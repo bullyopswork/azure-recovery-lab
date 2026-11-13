@@ -20,6 +20,12 @@ There is no manual restart call in this path. Still, replacement alone does not 
 
 If logs do not establish cause, say so. Report `azure_recovery_observed` separately from cause verification. Include replica changes, HTTP sampling interval, source commit, image digest, timings, exact experiment definition and cleanup receipt. Recovery-from-exec-start is not comparable to the local injection-to-ready timing without accounting for setup and polling differences.
 
+## Current Azure attempts
+
+The live deployment and GitHub OIDC exchange have succeeded. Recovery is still unverified. The first deployed run stopped at its initial HTTP health check before ingress was ready. A later run stopped in its first Azure CLI app inspection. The original helper discarded CLI stderr, so that second failure's underlying cause is unknown. Neither failed test injected a fault.
+
+The inspection helper now reports fixed, allowlisted diagnostic labels rather than arbitrary stderr, which can contain private values. It retries recognized temporary read failures at most three times, with a 15 second command timeout and short backoff. Authentication, authorization and unknown failures stop immediately. The helper accepts only app inspection and replica listing; fault injection is never retried through it. A successful read and all configuration and healthy baseline checks are still required before injection.
+
 ## Demo outline
 
 1. Show repository status, actual CI result and architecture.
