@@ -1,5 +1,19 @@
 # Azure Recovery Lab
 
+## In 30 seconds
+
+**Problem:** an unhealthy application can keep running until someone intervenes. A restart claim needs observable evidence, not just a healthy screenshot.
+
+**Solution:** a Python service with explicit health probes, process identity and a controlled failure, deployed through Terraform and GitHub OIDC. Azure performs the container restart; the fault command does not request one.
+
+**Try it:** [watch the 28 second recorded data replay](demo/Recovery-Results.mp4), then inspect the [raw result and separate cause review](docs/EVIDENCE.md). There is no permanently hosted cloud app.
+
+**Proof:** one real Azure trial recovered to a new healthy process in the same replica. The **43.158 second** measurement includes CLI setup, ingress, polling and the completed response. This is not an SLA or zero downtime result. CI covers 26 unit and guard tests plus separate drill, Terraform and container checks. Final billed cost remains unposted.
+
+**Engineering decision:** one replica makes the outage and recovery directly observable. Boot bound fault injection prevents the recovered process from inheriting the old process's failure marker.
+
+**Project work:** service implementation, instrumentation, infrastructure, deployment workflow and evidence review were developed with AI assistance. Source and verification records support the result; this is not a claim of unaided or personally handwritten code.
+
 [![Verify recovery lab](https://github.com/bullyopswork/azure-recovery-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/bullyopswork/azure-recovery-lab/actions/workflows/ci.yml)
 
 A small web service built to make failure and recovery observable: fail a health check, watch an external supervisor replace the process, and verify the new instance over HTTP.
