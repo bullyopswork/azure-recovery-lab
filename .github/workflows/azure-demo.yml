@@ -22,7 +22,7 @@ jobs:
       contents: read
       id-token: write
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       ARM_USE_OIDC: 'true'
       ARM_USE_AZUREAD: 'true'
@@ -50,6 +50,7 @@ jobs:
         run: |
           az version
           az containerapp exec --help >/dev/null
+          command -v timeout
       - name: Initialize Entra-authenticated remote state
         working-directory: infra/app
         env:
@@ -77,12 +78,12 @@ jobs:
           python scripts/azure_recovery_drill.py --resource-group "$APP_RESOURCE_GROUP" --app-name recoverylab-app --url "$(terraform -chdir=infra/app output -raw url)"
       - name: Always remove temporary app and environment
         if: always() && steps.deploy.outcome != 'skipped'
-        timeout-minutes: 10
+        timeout-minutes: 20
         working-directory: infra/app
         run: |
           set -euo pipefail
           if test -d .terraform; then
-            terraform destroy -auto-approve -input=false
+            timeout --signal=INT --kill-after=30s 18m terraform destroy -auto-approve -input=false
             terraform state list > /tmp/recoverylab-state-list
             if grep -q '^azurerm_container_app' /tmp/recoverylab-state-list; then
               echo 'App or environment remains in Terraform state' >&2

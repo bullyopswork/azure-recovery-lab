@@ -35,6 +35,8 @@ Operational target: one observed run under an hour, with **$1 reserved as a prov
 
 The `always()` destroy step is a best-effort guard. Runner loss, cancellation, a hard job timeout or control-plane failure can prevent it. Do not assume a canceled workflow is cleaned up.
 
+The first deployed run exposed two timing boundaries: public ingress was not yet ready after the deployment API completed, and Azure environment deletion exceeded the original ten minute cleanup allowance. The drill now waits up to 90 seconds for a stable healthy baseline before injection. Cleanup has a 20 minute step allowance within a 45 minute overall workflow bound. The destroy command receives an interrupt after 18 minutes, followed by a forced stop after another 30 seconds if necessary, leaving time for Terraform to release its state lock before the step deadline. These are finite waiting limits, not proof that Azure has finished deletion or a guarantee that cleanup or lock release will complete before timeout.
+
 Use the authenticated operator context to inspect the same subscription and exact project-tagged groups. Reinitialize the app backend from the original bootstrap outputs, inspect state, then rerun app destroy. If state recovery is impossible, inspect and explicitly remove only the two known disposable lab groups through Azure's normal deletion path; never use a broad subscription sweep. Preserve proof and report what remains.
 
 Do not remove the state store before app cleanup is reconciled. Do not leave a failed experiment running overnight. After Azure deletion is verified, remove or disable the GitHub environment variables used for the now-deleted identity.
