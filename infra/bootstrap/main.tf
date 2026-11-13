@@ -28,6 +28,15 @@ variable "github_repository" {
   type    = string
   default = "bullyopswork/azure-recovery-lab"
 }
+variable "github_oidc_subject" {
+  type        = string
+  description = "Exact GitHub OIDC sub claim for this repository's azure-demo environment, including immutable IDs when enabled."
+  nullable    = false
+  validation {
+    condition     = replace(var.github_oidc_subject, "/@[0-9]+/", "") == "repo:${var.github_repository}:environment:azure-demo"
+    error_message = "The exact subject must identify github_repository and the azure-demo environment; wildcards and other repositories/environments are not allowed."
+  }
+}
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "control" {
@@ -72,7 +81,7 @@ resource "azurerm_federated_identity_credential" "github" {
   user_assigned_identity_id = azurerm_user_assigned_identity.deployment.id
   audience                  = ["api://AzureADTokenExchange"]
   issuer                    = "https://token.actions.githubusercontent.com"
-  subject                   = "repo:${var.github_repository}:environment:azure-demo"
+  subject                   = var.github_oidc_subject
 }
 resource "azurerm_role_assignment" "deployment" {
   scope                = azurerm_resource_group.app.id

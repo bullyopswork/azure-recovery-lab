@@ -15,7 +15,7 @@ No reusable Azure client secret or GitHub PAT is placed in the repository. The o
 
 1. Select the intended subscription with `az login` and `az account set`. Verify its account, tenant and offer. Do not silently use another default subscription.
 2. Register `Microsoft.App`, `Microsoft.OperationalInsights`, `Microsoft.Storage` and `Microsoft.ManagedIdentity` if required for this subscription. Registration is an operator action; the restricted deployment identity cannot register providers.
-3. Choose a fresh 8–12 character lowercase alphanumeric suffix. Inspect `infra/bootstrap/main.tf`. Plan this root with `TF_VAR_suffix` and the intended `ARM_SUBSCRIPTION_ID`, then review the plan before apply.
+3. Choose a fresh suffix of 8 to 12 lowercase alphanumeric characters. Inspect `infra/bootstrap/main.tf`. Check the repository's current OIDC configuration with `gh api repos/OWNER/REPO/actions/oidc/customization/sub`. When `use_immutable_subject` is true, use the returned `sub_claim_prefix` followed by `:environment:azure-demo`. Otherwise, verify the exact subject emitted by the runner; do not assume a legacy format for a customized configuration. Set `TF_VAR_github_oidc_subject` to that exact claim. Plan this root with `TF_VAR_suffix` and the intended `ARM_SUBSCRIPTION_ID`, then review the plan before apply.
 4. Apply bootstrap. Keep its local Terraform state in protected local storage, out of Git. Role-assignment propagation can take time; diagnose an authorization error rather than broadening scopes.
 5. Create the GitHub environment **azure-demo**, restrict it to main, and set the following environment variables from bootstrap outputs:
 
@@ -28,7 +28,9 @@ No reusable Azure client secret or GitHub PAT is placed in the repository. The o
 | `STATE_RESOURCE_GROUP` | `state_resource_group` |
 | `STATE_STORAGE_ACCOUNT` | `state_storage_account` |
 
-These identifiers are not passwords. The OIDC trust is exact: `repo:bullyopswork/azure-recovery-lab:environment:azure-demo`, issuer `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`. Contributor is scoped only to the lab app resource group; blob access is scoped only to its state storage account. There is no subscription-wide Contributor grant.
+These identifiers are not passwords. The OIDC trust uses the exact configured subject, issuer `https://token.actions.githubusercontent.com`, and audience `api://AzureADTokenExchange`. An immutable subject has the form `repo:OWNER@OWNER_ID/REPO@REPO_ID:environment:azure-demo`; a legacy subject omits the numeric IDs. Terraform rejects subjects for another repository or environment. Contributor is scoped only to the lab app resource group; blob access is scoped only to its state storage account. There is no subscription wide Contributor grant.
+
+The first live login exposed this distinction: the repository emitted an immutable subject while the original bootstrap trusted the legacy form. Azure refused that login before app deployment. Match the actual claim rather than disabling immutable subjects or broadening permissions.
 
 The bootstrap state must remain available for final teardown. It is intentionally separate from the app's private remote state so that state storage can be removed last.
 
