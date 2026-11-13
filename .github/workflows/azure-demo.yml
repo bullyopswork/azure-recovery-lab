@@ -30,24 +30,32 @@ jobs:
     env:
       ARM_USE_OIDC: 'true'
       ARM_USE_AZUREAD: 'true'
-      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       TF_VAR_resource_group_name: ${{ vars.APP_RESOURCE_GROUP }}
       TF_VAR_container_image: ${{ inputs.image }}
       TF_VAR_enable_faults: ${{ inputs.enable_faults }}
       TF_VAR_expires_at: temporary-demo-cleanup-required
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate masked identity inputs and create fresh evidence directory
+        env:
+          LAB_EVIDENCE_DIR: ${{ runner.temp }}/recoverylab-raw-${{ github.run_id }}-${{ github.run_attempt }}
+          LAB_PUBLIC_EVIDENCE_DIR: ${{ runner.temp }}/recoverylab-public-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python scripts/ci_privacy.py check-identity
+          mkdir -m 700 "$LAB_EVIDENCE_DIR"
+          printf 'LAB_EVIDENCE_DIR=%s\nLAB_PUBLIC_EVIDENCE_DIR=%s\n' "$LAB_EVIDENCE_DIR" "$LAB_PUBLIC_EVIDENCE_DIR" >> "$GITHUB_ENV"
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: '1.17.2'
           terraform_wrapper: false
       - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Verify public image access before allocating cloud compute
         if: '!inputs.preflight_only'
         run: python scripts/verify_public_image.py "$TF_VAR_container_image"
@@ -105,7 +113,7 @@ jobs:
           APP_RESOURCE_GROUP: ${{ vars.APP_RESOURCE_GROUP }}
         run: |
           set -euo pipefail
-          python scripts/azure_recovery_drill.py --resource-group "$APP_RESOURCE_GROUP" --app-name recoverylab-app --url "$(terraform -chdir=infra/app output -raw url)"
+          python scripts/azure_recovery_drill.py --resource-group "$APP_RESOURCE_GROUP" --app-name recoverylab-app --url "$(terraform -chdir=infra/app output -raw url)" --output "$LAB_EVIDENCE_DIR/azure-recovery.json"
       - name: Always remove temporary app and environment
         if: always() && steps.deploy.outcome != 'skipped'
         timeout-minutes: 32
@@ -125,9 +133,14 @@ jobs:
         timeout-minutes: 1
         env:
           APP_RESOURCE_GROUP: ${{ vars.APP_RESOURCE_GROUP }}
-        run: python scripts/verify_azure_cleanup.py --resource-group "$APP_RESOURCE_GROUP"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        run: python scripts/verify_azure_cleanup.py --resource-group "$APP_RESOURCE_GROUP" --output "$LAB_EVIDENCE_DIR/azure-recovery-cleanup.json"
+      - name: Prepare only current sanitized public evidence
+        id: public_evidence
         if: always()
+        run: python scripts/ci_privacy.py stage-evidence --source "$LAB_EVIDENCE_DIR" --destination "$LAB_PUBLIC_EVIDENCE_DIR"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.public_evidence.outcome == 'success'
         with:
           name: azure-recovery-evidence
-          path: evidence/azure-recovery*
+          path: ${{ env.LAB_PUBLIC_EVIDENCE_DIR }}/
+          if-no-files-found: error

@@ -41,7 +41,7 @@ The drill permits a bounded wait for a replica to appear, then requires three he
 
 Use the authenticated operator context to inspect the same subscription and exact project-tagged groups. Reinitialize the app backend from the original bootstrap outputs, inspect state, then rerun app destroy. If state recovery is impossible, inspect and explicitly remove only the two known disposable lab groups through Azure's normal deletion path; never use a broad subscription sweep. Preserve proof and report what remains.
 
-Do not remove the state store before app cleanup is reconciled. Do not leave a failed experiment running overnight. After Azure deletion is verified, remove or disable the GitHub environment variables used for the now-deleted identity.
+Do not remove the state store before app cleanup is reconciled. Do not leave a failed experiment running overnight. After Azure deletion is verified, remove the three identity environment secrets and the matching resource variables used for the deleted lab. If upgrading from the earlier variable based workflow, remove obsolete identity variables too. Never keep a stale identity input as a fallback.
 
 ## Sources
 

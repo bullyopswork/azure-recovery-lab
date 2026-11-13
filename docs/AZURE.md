@@ -17,18 +17,20 @@ No reusable Azure client secret or GitHub PAT is placed in the repository. The o
 2. Register `Microsoft.App`, `Microsoft.OperationalInsights`, `Microsoft.Storage` and `Microsoft.ManagedIdentity` if required for this subscription. Registration is an operator action; the restricted deployment identity cannot register providers.
 3. Choose a fresh suffix of 8 to 12 lowercase alphanumeric characters. Inspect `infra/bootstrap/main.tf`. Check the repository's current OIDC configuration with `gh api repos/OWNER/REPO/actions/oidc/customization/sub`. When `use_immutable_subject` is true, use the returned `sub_claim_prefix` followed by `:environment:azure-demo`. Otherwise, verify the exact subject emitted by the runner; do not assume a legacy format for a customized configuration. Set `TF_VAR_github_oidc_subject` to that exact claim. Plan this root with `TF_VAR_suffix` and the intended `ARM_SUBSCRIPTION_ID`, then review the plan before apply.
 4. Apply bootstrap. Keep its local Terraform state in protected local storage, out of Git. Role-assignment propagation can take time; diagnose an authorization error rather than broadening scopes.
-5. Create the GitHub environment **azure-demo**, restrict it to main, and set the following environment variables from bootstrap outputs:
+5. Create the GitHub environment **azure-demo**, restrict it to main, and configure the following environment secrets and variables from bootstrap outputs. Store all three Azure identity IDs as secrets so GitHub masks them before step headers, login output and Terraform logs are displayed. Use canonical lowercase UUID values. Do not put these three values in ordinary variables or add a fallback to variables.
 
-| GitHub variable | Terraform output |
-| --- | --- |
-| `AZURE_CLIENT_ID` | `client_id` |
-| `AZURE_TENANT_ID` | `tenant_id` |
-| `AZURE_SUBSCRIPTION_ID` | `subscription_id` |
-| `APP_RESOURCE_GROUP` | `app_resource_group` |
-| `STATE_RESOURCE_GROUP` | `state_resource_group` |
-| `STATE_STORAGE_ACCOUNT` | `state_storage_account` |
+| GitHub environment input | Kind | Terraform output |
+| --- | --- | --- |
+| `AZURE_CLIENT_ID` | Secret | `client_id` |
+| `AZURE_TENANT_ID` | Secret | `tenant_id` |
+| `AZURE_SUBSCRIPTION_ID` | Secret | `subscription_id` |
+| `APP_RESOURCE_GROUP` | Variable | `app_resource_group` |
+| `STATE_RESOURCE_GROUP` | Variable | `state_resource_group` |
+| `STATE_STORAGE_ACCOUNT` | Variable | `state_storage_account` |
 
-These identifiers are not passwords. The OIDC trust uses the exact configured subject, issuer `https://token.actions.githubusercontent.com`, and audience `api://AzureADTokenExchange`. An immutable subject has the form `repo:OWNER@OWNER_ID/REPO@REPO_ID:environment:azure-demo`; a legacy subject omits the numeric IDs. Terraform rejects subjects for another repository or environment. Contributor is scoped only to the lab app resource group; blob access is scoped only to its state storage account. There is no subscription wide Contributor grant.
+These identifiers are not passwords. Secret storage is used for automatic log masking, not to create a reusable Azure credential. Missing or noncanonical identity inputs fail before Azure login. Do not restore IDs for an identity that has already been deleted just to run this check.
+
+The OIDC trust uses the exact configured subject, issuer `https://token.actions.githubusercontent.com`, and audience `api://AzureADTokenExchange`. An immutable subject has the form `repo:OWNER@OWNER_ID/REPO@REPO_ID:environment:azure-demo`; a legacy subject omits the numeric IDs. Terraform rejects subjects for another repository or environment. Contributor is scoped only to the lab app resource group; blob access is scoped only to its state storage account. There is no subscription wide Contributor grant.
 
 The first live login exposed this distinction: the repository emitted an immutable subject while the original bootstrap trusted the legacy form. Azure refused that login before app deployment. Match the actual claim rather than disabling immutable subjects or broadening permissions.
 
@@ -47,6 +49,8 @@ Replace the placeholders with the real lowercase name and 64-character digest. T
 ## Run one cloud experiment
 
 Manually dispatch **Temporary Azure recovery demo** with that image and CLI faults enabled. The workflow initializes Entra-authenticated blob state, reviews the Terraform plan in its log, applies only the app/environment, runs one bounded experiment, then attempts `terraform destroy` in an `always()` step.
+
+Each workflow execution writes raw evidence into a fresh runner temporary directory. Before upload, `scripts/ci_privacy.py` creates a separate JSON copy with the configured Azure identity IDs redacted, plus a manifest binding the workflow run, attempt, source commit and raw/published file hashes. An experiment that did not run is labeled `NOT_RUN`. Only that new sanitized directory is eligible for upload. Historical checked in results and reviewed receipts are not included. GitHub log masking does not modify artifact files; the artifact sanitizer is a separate boundary. Preserve raw copies privately when needed for later review and make any sanitization explicit.
 
 The experiment checks the project tag, resource-group prefix, exact live ingress, one replica, selected revision/container, configured liveness probe and opt-in fault flag. It uses the constant remote command `python -m recovery_lab.fault`; it never calls `az containerapp restart` or changes the revision. It requires a matching boot-bound injection acknowledgement, an HTTP failure, and healthy HTTP from a different boot UUID.
 

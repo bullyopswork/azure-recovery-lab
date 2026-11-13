@@ -1,0 +1,27 @@
+{
+  "scope": "GITHUB_PUBLIC_LOG_PRIVACY_CLEANUP",
+  "authorized": true,
+  "log_archives_removed": 7,
+  "workflow_results_preserved": true,
+  "artifact_ids_preserved": true,
+  "private_archives_verified_before_removal": true,
+  "commit_history_rewritten": false,
+  "azure_operations": false,
+  "credentials_rotated": false,
+  "future_identity_input_source": "GitHub environment secrets, not ordinary variables",
+  "future_artifacts": "Fresh run-specific JSON evidence with identity redaction and explicit run/source manifest",
+  "local_tests_passed": 26,
+  "live_azure_workflow_rerun": false,
+  "historical_live_test_source": "e5c8d757c46db64541d97268055185de6b1f6ebd",
+  "historical_live_test_run": 43466690841,
+  "affected_workflow_runs": [
+    43430356380,
+    43431029771,
+    43436102634,
+    43437669644,
+    43441900658,
+    43466550951,
+    43466690841
+  ],
+  "note": "Only log archives removed. Prior raw results, public cause evidence and downloadable artifacts remain. GitHub secret masking applies to logs; artifact redaction is separate. No cloud run was started to test this privacy change."
+}

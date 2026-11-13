@@ -105,4 +105,7 @@ Liveness and readiness intentionally use the same simple failure model; a produc
 7. Final billed usage remains unknown because Azure Cost Management has not yet ingested the subscription. No zero cost claim is made.
 
 Earlier failures remain listed in [the machine readable receipt](evidence/verification.json); they were not relabeled as successes.
+
+Subsequent privacy cleanup removed seven backed up public log archives containing account identifiers, while retaining workflow results, artifacts and the accepted recovery evidence. Future runs use masked identity inputs and publish only fresh sanitized evidence. The four added privacy/provenance tests bring the current suite to 26. See [the cleanup receipt](evidence/privacy-cleanup.json) and [artifact boundaries](docs/EVIDENCE.md#public-log-privacy-and-future-artifact-provenance). No additional Azure experiment was run for this change.
+
 See [sources and pinned versions](docs/SOURCES.md) for the vendor references used to build this lab.

@@ -34,6 +34,12 @@ Automatic app/environment cleanup passed after about 25 minutes. Independent che
 
 Earlier attempts stopped before injection because of OIDC trust mismatch, ingress startup timing, an undiagnosed CLI inspection error, and a hard deployment timeout with a stale state lock. Their failed evidence is preserved and their outcomes remain distinct in [verification.json](../evidence/verification.json).
 
+## Public log privacy and future artifact provenance
+
+Seven historical workflow log archives contained Azure subscription and tenant identifiers. No authentication credential was identified in the repository/history/Actions review. Those log archives were removed after their private backups were verified. Workflow results, downloadable artifacts, the accepted raw result and the published cause evidence remain intact. Commit authorship was not rewritten.
+
+Future cloud runs require the three Azure identity IDs as GitHub environment secrets for automatic log masking. Their artifact files are sanitized separately, with raw and published hashes and explicit workflow/source identity in `workflow-evidence.json`. Fresh output directories prevent skipped or failed executions from uploading historical portfolio successes. A skipped experiment has `NOT_RUN` status, not a copied PASS. The accepted historical cloud trial remains bound to its original harness source; this privacy change is not another cloud recovery test.
+
 ## Demo outline
 
 1. Show repository status, actual CI result and architecture.
