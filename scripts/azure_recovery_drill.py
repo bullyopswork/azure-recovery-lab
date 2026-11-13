@@ -68,7 +68,7 @@ def cli_error_summary(stderr):
     return "; ".join(found) or "Unclassified CLI failure; raw stderr intentionally omitted"
 
 
-def az_json(subscription, *arguments):
+def az_json(subscription, *arguments, deadline=None):
     # Only these constant, read-only inspections are eligible for propagation
     # retries. Never retry an exec/fault operation through this helper.
     if not (arguments[:2] == ("containerapp", "show") or
@@ -78,13 +78,18 @@ def az_json(subscription, *arguments):
                  "TooManyRequests", "InternalServerError", "ServiceUnavailable",
                  "ConnectionError", "Connection reset", "Read timed out", "ConnectTimeout")
     for attempt in range(3):
+        read_timeout = 15 if deadline is None else min(15, deadline - time.monotonic())
+        if read_timeout <= 0:
+            raise RuntimeError("Azure CLI startup read deadline expired")
         try:
             result = subprocess.run(["az", *arguments, "--subscription", subscription, "--only-show-errors", "-o", "json"],
-                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15, check=False)
+                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=read_timeout, check=False)
         except subprocess.TimeoutExpired:
             if attempt == 2:
                 raise RuntimeError("Azure CLI read timed out after three bounded attempts") from None
         else:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise RuntimeError("Azure CLI startup read deadline expired")
             if result.returncode == 0:
                 return json.loads(result.stdout)
             # Authentication/authorization and unknown errors fail immediately.
@@ -94,7 +99,30 @@ def az_json(subscription, *arguments):
             if auth_error or attempt == 2 or not any(x in result.stderr for x in transient):
                 raise RuntimeError("Azure CLI read failed (%s), exit %s: %s" %
                                    (" ".join(arguments[:3]), result.returncode, detail))
-        time.sleep(attempt + 1)
+        pause = attempt + 1 if deadline is None else min(attempt + 1, max(0, deadline - time.monotonic()))
+        time.sleep(pause)
+
+
+def wait_for_single_replica(subscription, group, app, revision, timeout=60):
+    """Allow a successful empty startup read to settle; never accept two replicas."""
+    deadline = time.monotonic() + timeout
+    while True:
+        if time.monotonic() >= deadline:
+            raise RuntimeError("No live replica appeared within bounded startup wait")
+        replicas = az_json(subscription, "containerapp", "replica", "list", "-g", group,
+                           "-n", app, "--revision", revision, deadline=deadline)
+        if time.monotonic() >= deadline:
+            raise RuntimeError("No live replica appeared within bounded startup wait")
+        if isinstance(replicas, dict):
+            replicas = replicas.get("value", [])
+        if len(replicas) == 1:
+            return replicas[0]["name"]
+        if replicas:
+            raise RuntimeError("Expected exactly one live replica; multiple replicas found")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("No live replica appeared within bounded startup wait")
+        time.sleep(min(3, remaining))
 
 
 def inspect_app(args):
@@ -121,12 +149,35 @@ def inspect_app(args):
     if not any(p.get("type") == "Liveness" and p.get("httpGet", {}).get("path") == "/health/live" for p in probes):
         raise RuntimeError("Configured HTTP liveness probe not found")
     revision = properties["latestRevisionName"]
-    replicas = az_json(args.subscription, "containerapp", "replica", "list", "-g", args.resource_group, "-n", args.app_name, "--revision", revision)
-    if isinstance(replicas, dict):
-        replicas = replicas.get("value", [])
-    if len(replicas) != 1:
-        raise RuntimeError("Expected exactly one live replica")
-    return {"revision": revision, "replica": replicas[0]["name"], "image": container["image"]}
+    replica = wait_for_single_replica(args.subscription, args.resource_group, args.app_name, revision)
+    return {"revision": revision, "replica": replica, "image": container["image"]}
+
+
+def capture_system_logs(args, result):
+    """Optional read failure cannot erase an already observed recovery."""
+    try:
+        logs = subprocess.run(["az", "containerapp", "logs", "show", "--subscription", args.subscription,
+                               "-g", args.resource_group, "-n", args.app_name, "--type", "system", "--tail", "100",
+                               "--format", "json", "--only-show-errors"],
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=40, check=False)
+    except subprocess.TimeoutExpired:
+        result["system_log_warning"] = "CLI log capture timed out; platform causality remains unverified"
+        return
+    if logs.returncode != 0:
+        result["system_log_warning"] = "CLI log capture failed; platform causality remains unverified"
+        return
+    events = []
+    for line in logs.stdout.splitlines():
+        try:
+            value = json.loads(line)
+            if isinstance(value, dict):
+                events.append(value)
+        except ValueError:
+            pass
+    log_path = args.output.with_name(args.output.stem + "." + result["run_id"] + ".system.jsonl")
+    log_path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    result["system_log"] = log_path.name
+    result["system_events_captured"] = len(events)
 
 
 def extract_ack(text):
@@ -180,6 +231,11 @@ def experiment(args, result):
     result["target"] = target
     before = wait_for_healthy_baseline(args.url, result)
     result["before"] = before
+    fresh = inspect_app(args)
+    if fresh["revision"] != target["revision"] or fresh["image"] != target["image"]:
+        raise RuntimeError("Revision or image changed during baseline")
+    target = fresh
+    result["target"] = target
     atomic_json(args.output, result)
     # A pseudo-terminal is required by Azure CLI's SSH-like exec transport. The
     # command is constant: no shell, interpolated user commands, or remote restart.
@@ -260,26 +316,7 @@ def experiment(args, result):
     result["azure_recovery_observed"] = True
     # System logs are captured, but an explicit causal claim is left to review.
     # These are short-lived streaming logs, not an audit-grade durable store.
-    logs = subprocess.run(["az", "containerapp", "logs", "show", "--subscription", args.subscription,
-                           "-g", args.resource_group, "-n", args.app_name, "--type", "system", "--tail", "100",
-                           "--format", "json", "--only-show-errors"],
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=40, check=False)
-    log_path = args.output.with_name(args.output.stem + "." + result["run_id"] + ".system.jsonl")
-    if logs.returncode == 0:
-        # Preserve only structured platform event lines, never CLI debug output.
-        events = []
-        for line in logs.stdout.splitlines():
-            try:
-                value = json.loads(line)
-                if isinstance(value, dict):
-                    events.append(value)
-            except ValueError:
-                pass
-        log_path.write_text("".join(json.dumps(event) + "\n" for event in events))
-        result["system_log"] = log_path.name
-        result["system_events_captured"] = len(events)
-    else:
-        result["system_log_warning"] = "CLI log capture failed; platform causality remains unverified"
+    capture_system_logs(args, result)
     result["platform_liveness_cause_verified"] = False
     result["causality_note"] = "Review run-window system logs for the configured liveness failure/restart; a new boot alone does not prove the platform cause."
 

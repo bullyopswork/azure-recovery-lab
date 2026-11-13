@@ -3,7 +3,9 @@ import unittest
 import json
 import subprocess
 from unittest.mock import patch, MagicMock
-from scripts.azure_recovery_drill import az_json, cli_error_summary, extract_ack, validate_target, wait_for_healthy_baseline
+from types import SimpleNamespace
+from scripts.azure_recovery_drill import az_json, capture_system_logs, cli_error_summary, extract_ack, validate_target, wait_for_healthy_baseline, wait_for_single_replica
+from scripts.verify_azure_cleanup import inspect_cleanup
 from scripts.verify_public_image import parse_image, verify
 
 SUBSCRIPTION = "11111111-1111-4111-8111-111111111111"
@@ -21,6 +23,63 @@ class Clock:
 
 
 class CloudGuards(unittest.TestCase):
+    def test_empty_startup_replica_read_waits_but_multiple_replicas_fail(self):
+        clock = Clock()
+        with patch("scripts.azure_recovery_drill.az_json", side_effect=[[], [], [{"name": "one"}]]), \
+                patch("scripts.azure_recovery_drill.time.monotonic", clock.monotonic), \
+                patch("scripts.azure_recovery_drill.time.sleep", clock.sleep):
+            self.assertEqual(wait_for_single_replica(SUBSCRIPTION, "group", "app", "revision"), "one")
+        self.assertEqual(clock.now, 6)
+        clock = Clock()
+        with patch("scripts.azure_recovery_drill.az_json", return_value=[]), \
+                patch("scripts.azure_recovery_drill.time.monotonic", clock.monotonic), \
+                patch("scripts.azure_recovery_drill.time.sleep", clock.sleep), self.assertRaisesRegex(RuntimeError, "bounded startup"):
+            wait_for_single_replica(SUBSCRIPTION, "group", "app", "revision", timeout=6)
+        with patch("scripts.azure_recovery_drill.az_json", return_value=[{"name": "one"}, {"name": "two"}]), \
+                self.assertRaisesRegex(RuntimeError, "multiple replicas"):
+            wait_for_single_replica(SUBSCRIPTION, "group", "app", "revision")
+
+    def test_a_late_success_cannot_escape_startup_deadline(self):
+        clock = Clock()
+        def late(*args, **kwargs):
+            clock.now = 60
+            return [{"name": "late"}]
+        with patch("scripts.azure_recovery_drill.az_json", side_effect=late), \
+                patch("scripts.azure_recovery_drill.time.monotonic", clock.monotonic), \
+                self.assertRaisesRegex(RuntimeError, "bounded startup"):
+            wait_for_single_replica(SUBSCRIPTION, "group", "app", "revision")
+        clock.now = 59
+        ready = MagicMock(returncode=0, stdout='{}')
+        with patch("scripts.azure_recovery_drill.subprocess.run", return_value=ready) as run, \
+                patch("scripts.azure_recovery_drill.time.monotonic", clock.monotonic):
+            az_json(SUBSCRIPTION, "containerapp", "show", deadline=60)
+        self.assertEqual(run.call_args.kwargs["timeout"], 1)
+
+    def test_optional_log_timeout_preserves_observed_recovery_not_cause(self):
+        result = {"azure_recovery_observed": True, "platform_liveness_cause_verified": False}
+        args = SimpleNamespace(subscription=SUBSCRIPTION, resource_group="group", app_name="app")
+        with patch("scripts.azure_recovery_drill.subprocess.run", side_effect=subprocess.TimeoutExpired("az", 40)):
+            capture_system_logs(args, result)
+        self.assertTrue(result["azure_recovery_observed"])
+        self.assertFalse(result["platform_liveness_cause_verified"])
+        self.assertIn("timed out", result["system_log_warning"])
+
+    def test_empty_terraform_state_cannot_hide_an_orphan_environment(self):
+        account = MagicMock(returncode=0, stdout=json.dumps({"id": SUBSCRIPTION, "tenantId": SUBSCRIPTION}))
+        orphan = MagicMock(returncode=0, stdout='[{"name":"recoverylab-env","type":"Microsoft.App/managedEnvironments"}]')
+        empty = MagicMock(returncode=0, stdout='[]')
+        for inventory, expected in [(orphan, False), (empty, True)]:
+            with patch("scripts.verify_azure_cleanup.subprocess.run", side_effect=[account, inventory]):
+                result = inspect_cleanup("rg-recoverylab-app-abc12345", SUBSCRIPTION, SUBSCRIPTION)
+            self.assertEqual(result["physical_cleanup_verified"], expected)
+        denied = MagicMock(returncode=1, stderr="AuthorizationFailed", stdout="")
+        with patch("scripts.verify_azure_cleanup.subprocess.run", side_effect=[account, denied]), \
+                self.assertRaisesRegex(RuntimeError, "no absence claim"):
+            inspect_cleanup("rg-recoverylab-app-abc12345", SUBSCRIPTION, SUBSCRIPTION)
+        with patch("scripts.verify_azure_cleanup.subprocess.run") as run, self.assertRaises(ValueError):
+            inspect_cleanup("rg-production", SUBSCRIPTION, SUBSCRIPTION)
+        run.assert_not_called()
+
     def test_cli_read_timeouts_end_after_three_attempts(self):
         with patch("scripts.azure_recovery_drill.subprocess.run", side_effect=subprocess.TimeoutExpired("az", 15)) as run, \
                 patch("scripts.azure_recovery_drill.time.sleep"), self.assertRaisesRegex(RuntimeError, "three bounded attempts"):
