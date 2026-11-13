@@ -9,10 +9,14 @@ on:
         description: Enable CLI-only fault injection for this temporary demo
         type: boolean
         default: true
+      preflight_only:
+        description: Read-only account and app API check, without deployment or state access
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
-  group: recoverylab-azure-demo
+  group: recoverylab-azure-${{ inputs.preflight_only && 'read' || 'demo' }}
   cancel-in-progress: false
 jobs:
   demo:
@@ -45,13 +49,37 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - name: Verify public image access before allocating cloud compute
+        if: '!inputs.preflight_only'
         run: python scripts/verify_public_image.py "$TF_VAR_container_image"
       - name: Verify Azure CLI command availability
         run: |
           az version
           az containerapp exec --help >/dev/null
           command -v timeout
+      - name: Verify the scoped inspection API without allocating resources
+        env:
+          APP_RESOURCE_GROUP: ${{ vars.APP_RESOURCE_GROUP }}
+        run: |
+          python - <<'PY'
+          import json, os, re, subprocess, uuid
+          from scripts.azure_recovery_drill import cli_error_summary
+          subscription = str(uuid.UUID(os.environ['ARM_SUBSCRIPTION_ID']))
+          group = os.environ['APP_RESOURCE_GROUP']
+          assert re.fullmatch(r'rg-recoverylab-app-[a-z0-9]{8,12}', group)
+          account = json.loads(subprocess.check_output(['az', 'account', 'show', '--query', '{id:id,tenantId:tenantId}', '-o', 'json'], text=True, timeout=20))
+          assert account['id'] == subscription
+          assert account['tenantId'] == os.environ['ARM_TENANT_ID']
+          result = subprocess.run(['az', 'containerapp', 'show', '-g', group, '-n', 'recoverylab-app', '--subscription', subscription, '--only-show-errors', '--query', 'name', '-o', 'json'], text=True, capture_output=True, timeout=20)
+          if result.returncode == 0:
+              assert json.loads(result.stdout) == 'recoverylab-app'
+              print('Scoped account verified; exact app inspection succeeded.')
+          elif any(code in result.stderr for code in ('(ResourceNotFound)', '(ContainerAppNotFound)')):
+              print('Scoped account verified; exact app API returned expected absence. No resources allocated.')
+          else:
+              raise RuntimeError('CLI inspection preflight failed: ' + cli_error_summary(result.stderr))
+          PY
       - name: Initialize Entra-authenticated remote state
+        if: '!inputs.preflight_only'
         working-directory: infra/app
         env:
           STATE_GROUP: ${{ vars.STATE_RESOURCE_GROUP }}
@@ -61,6 +89,7 @@ jobs:
           test -n "$STATE_GROUP" && test -n "$STATE_ACCOUNT"
           terraform init -input=false -lockfile=readonly -backend-config="resource_group_name=$STATE_GROUP" -backend-config="storage_account_name=$STATE_ACCOUNT" -backend-config=container_name=tfstate -backend-config=key=recoverylab.tfstate
       - name: Plan and deploy only the isolated lab
+        if: '!inputs.preflight_only'
         id: deploy
         timeout-minutes: 12
         working-directory: infra/app
@@ -69,7 +98,7 @@ jobs:
           terraform plan -input=false -out=demo.tfplan
           terraform apply -input=false demo.tfplan
       - name: Real Azure recovery experiment
-        if: inputs.enable_faults
+        if: '!inputs.preflight_only && inputs.enable_faults'
         timeout-minutes: 8
         env:
           APP_RESOURCE_GROUP: ${{ vars.APP_RESOURCE_GROUP }}
